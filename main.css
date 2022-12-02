@@ -1,0 +1,26 @@
+#keyboard {
+  width: 100%;
+  position: relative;
+}
+.whitekey {
+  width: 5%;
+  height: 240px;
+  text-align: center;
+  display: inline-block;
+  border: 5px solid #000;
+}
+.whitekey:hover {
+  background-color: #eee;
+}
+
+.blackkey {
+  width: 4.5%;
+  height: 140px;
+  display: inline-block;
+  margin-left: -2.25%;
+  background-color: #000;
+  position: absolute;
+}
+.blackkey:hover {
+  background-color: #333;
+}
