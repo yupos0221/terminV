@@ -6,85 +6,37 @@
         <title>Page Title</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="stylesheet" type="text/css" media="screen" href="main.css" /> 
-
-        <!-- <style type="text/css">
-            #keyboard {
-                width: 100%;
-                position: relative;
-            }
-            .whitekey {
-                width: 10%;
-                height: 240px;
-                text-align: center;
-                display: inline-block;
-                border: 1px solid #000;
-            }
-            .whitekey:hover {
-              background-color: #eee;
-            }
+        <ul id="keyboard">
+          <li data-key="C4" class="whitekey"></li>
+          <li data-key="C#4" class="blackkey"></li> 
+          <li data-key="D4" class="whitekey"></li>
+          <li data-key="D#4" class="blackkey"></li> 
+          <li data-key="E4" class="whitekey"></li>
+          <li data-key="F4" class="whitekey"></li>
+          <li data-key="F#4" class="blackkey"></li>
+          <li data-key="G4" class="whitekey"></li>
+          <li data-key="G#4" class="blackkey"></li>
+          <li data-key="A4" class="whitekey"></li>
+          <li data-key="A#4" class="blackkey"></li>
+          <li data-key="B4" class="whitekey"></li>
+          <li data-key="C5" class="whitekey"></li>
+          <li data-key="C#5" class="blackkey"></li>
+          <li data-key="D5" class="whitekey"></li>               
+        </ul>
             
-            .blackkey {
-                width: 9%;
-                height: 140px;
-                display: inline-block;
-                margin-left: -5%;
-                background-color: #000;
-                position: absolute;
-            }
-            .blackkey:hover {
-              background-color: #333;
-            }
-            </style> -->
-            <ul id="keyboard">
-               <li data-key="C4" class="whitekey"></li>
-               <li data-key="C#4" class="blackkey"></li> 
-               <li data-key="D4" class="whitekey"></li>
-               <li data-key="D#4" class="blackkey"></li> 
-               <li data-key="E4" class="whitekey"></li>
-               <li data-key="F4" class="whitekey"></li>
-               <li data-key="F#4" class="blackkey"></li>
-               <li data-key="G4" class="whitekey"></li>
-               <li data-key="G#4" class="blackkey"></li>
-               <li data-key="A4" class="whitekey"></li>
-               <li data-key="A#4" class="blackkey"></li>
-               <li data-key="B4" class="whitekey"></li>
-               <li data-key="C5" class="whitekey"></li>
-               <li data-key="C#5" class="blackkey"></li>
-               <li data-key="D5" class="whitekey"></li>               
-            </ul>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.32/Tone.min.js"></script>
+            <link rel="stylesheet" href="https://unpkg.com/handsfree@8.5.1/build/lib/assets/handsfree.css" />
+            <script src="https://unpkg.com/handsfree@8.5.1/build/lib/handsfree.js"></script>
             
-            
-            <script src="http://chamu.org/tonejs/Tone.min.js"></script>
-            <!-- <script>
-            // ページ読み込み時シンセ生成
-            var synth;
-            window.onload = function(){
-              synth = new Tone.Synth().toMaster();
-            }
-            
-            // マウスを押した時のイベント処理
-            window.addEventListener('mousedown', playSound);
-            window.addEventListener('touchstart', playSound);
-            
-            
-            function playSound(e) {
-              
-              // マウスのdata属性を取得
-              var key = e.target.dataset.key;
-              
-              // keyがundefinedなら処理を実行しない
-              if (typeof key === "undefined") return;  
-              
-              // 音名を代入する
-              synth.triggerAttackRelease(key, '8n');
-                
-            }
-            </script> -->
         
         <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/13.3.1/Tone.min.js"></script> -->
         <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-rc.2/js/materialize.min.js"></script> -->
         <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/13.1.25/Tone.js"></script> -->
-        <script src="main.js"></script>   
+        <script src="sketch.js"></script>   
+
+      
+        
 
     </head>
 

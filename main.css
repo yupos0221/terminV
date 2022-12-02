@@ -4,7 +4,7 @@
 }
 .whitekey {
   width: 5%;
-  height: 240px;
+  height: 480px;
   text-align: center;
   display: inline-block;
   border: 5px solid #000;
@@ -15,7 +15,7 @@
 
 .blackkey {
   width: 4.5%;
-  height: 140px;
+  height: 240px;
   display: inline-block;
   margin-left: -2.25%;
   background-color: #000;
