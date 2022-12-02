@@ -5,9 +5,8 @@ let capture;
 // webカメラのロードフラグ
 let videoDataLoaded = false;
 
-let buttonStop;
-let buttonLoading;
 let buttonRunning;
+let buttonLoading;
 let buttonView;
 let buttonTrack;
 
@@ -100,15 +99,15 @@ function setup() {
   
   sizeButton = [windowWidth/10, windowHeight/10];
   textSize(20);
-  buttonStop = createButton('Stop');
-  buttonStop.size(sizeButton[0], sizeButton[1]-20);
-  buttonStop.position(0, 5);
+  buttonRunning = createButton('Stop');
+  buttonRunning.size(sizeButton[0], sizeButton[1]-20);
+  buttonRunning.position(0, 5);
   
-  buttonStop.style("background", "#cc0000");
-  buttonStop.class('handsfree-show-when-stopped');
-  buttonStop.class('handsfree-hide-when-loading');
-  buttonStop.style("font-size: x-large");
-  buttonStop.mousePressed(() => {
+  buttonRunning.style("background", "#cc0000");
+  buttonRunning.class('handsfree-show-when-stopped');
+  buttonRunning.class('handsfree-hide-when-loading');
+  buttonRunning.style("font-size: x-large");
+  buttonRunning.mousePressed(() => {
     handsfree.start();
     playSound();
   });
@@ -214,8 +213,8 @@ function updateView(){
     // resizeCanvas(windowWidth, windowHeight);
     resizeCanvas(windowWidth, orgHeight * (windowWidth/orgWidth)*0.9);
     sizeButton = [windowWidth/10, windowHeight/10];
-    buttonStop.size(sizeButton[0], sizeButton[1]-20);
-    buttonStop.position(0, 5);
+    buttonRunning.size(sizeButton[0], sizeButton[1]-20);
+    buttonRunning.position(0, 5);
     buttonLoading.size(sizeButton[0], sizeButton[1]-20);
     buttonLoading.position(0, 5);
     buttonRunning.size(sizeButton[0], sizeButton[1]-20);
@@ -235,7 +234,7 @@ function switchCameraView(){
     buttonView.html("View off");
     buttonView.style("background", "#cc0000");
   }else{
-    buttonView.html("view on");
+    buttonView.html("View on");
     buttonView.style("background", "#00cc00");
   }
   onView = !onView;
@@ -243,10 +242,10 @@ function switchCameraView(){
 
 function switchHandTracking(){
   if(onHandTracking){
-    buttonTrack.html("untrack");
+    buttonTrack.html("Untrack");
     buttonTrack.style("background", "#cc0000");
   }else{
-    buttonTrack.html("track");
+    buttonTrack.html("Track");
     buttonTrack.style("background", "#00cc00");
   }
   onHandTracking = !onHandTracking;
