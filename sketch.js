@@ -1,35 +1,46 @@
-// ページ読み込み時シンセ生成
-var synth;
-window.onload = function(){
-  synth = new Tone.Synth().toMaster();
-}
+let pWindowWidth;
+let orgWidth;
+let orgHeight;
+let capture;
+// webカメラのロードフラグ
+let videoDataLoaded = false;
 
-// マウスを押した時のイベント処理
-window.addEventListener('mousedown', playSound);
-window.addEventListener('touchstart', playSound);
+let buttonStart;
+let buttonLoading;
+let buttonStop;
+let buttonView;
+let buttonTrack;
 
+let sliderVelocity;
 
-function playSound(e) {
-  
-  // マウスのdata属性を取得
-  var key = e.target.dataset.key;
-  
-  // keyがundefinedなら処理を実行しない
-  if (typeof key === "undefined") return;  
-  
-  // 音名を代入する
-  synth.triggerAttackRelease(key, '8n');
-    
-}
+let radioMode;
 
-function play(){
-    synth.triggerAttackRelease("C4", "4n");
-}
+let onHandTracking = false;
+let onView = false;
+
+let handsfree;
+
+const circleSize = 12;
+
+const targetIndex = [4, 8, 12, 16, 20];
+const palette = ["#9b5de5", "#f15bb5", "#fee440", "#00bbf9", "#00f5d4"];
+
+// const note_colors = [{8:["C", (  0,   0, 255)], 12:["D", (  0, 255, 255)], 16:["E", (  0, 128,   0)], 20:["F", (  0, 255,   0)]},
+//                      {8:["G", (255, 255,   0)], 12:["A", (128,   0, 128)], 16:["B", ( 128,  0, 255)], 20:["C", (  0,   0, 255)]}
+//                     ];
 
 const note_colors = [{8:["C", "#4040ff"], 12:["D", "#ffa040"], 16:["E", "#ff00ff"], 20:["F", "#00ff00"]},
                     {8:["G", "#0085ff"], 12:["A", "#fee440"], 16:["B", "#a000ff"], 20:["C", "#00f5d4"]}
                    ];
-const circleSize = 12;
+
+// const tones = ["C4", "D4", "E4", "F4", "G4", "A4", "B4", "C5"];
+const leftTones = [["C3", "D3", "E3", "F3"], ["C4", "D4", "E4", "F4"], ["C5", "D5", "E5", "F5"]];
+const rightTones = [["G3", "A3", "B3", "C4"], ["G4", "A4", "B4", "C5"], ["G5", "A5", "B5", "C6"]];
+let toneShift = [1,1];
+const singleTones = [["G3", "A3", "B3", "C4"], ["C4", "D4", "E4", "F4"], ["G4", "A4", "B4", "C5"]];
+
+let oscLeft;
+let oscRight;
 
 function setup() {
   // createCanvas(640, 480);
@@ -46,7 +57,6 @@ function setup() {
     // let canvas = createCanvas(windowWidth, windowHeight*0.9);
     pWindowWidth = windowWidth;
     canvas.position(0, window.innerHeight/10);
-    console.log(capture.width, capture.height);
   };
 
   
@@ -65,39 +75,134 @@ function setup() {
     // Higher values are more robust at the expense of higher latency
     minTrackingConfidence: 1.0
   });
+
+  // handsfreeを開始
+  // handsfree.enablePlugins('browser');
+  // handsfree.plugin.pinchScroll.disable()
+  // handsfree.start();
+  
+  sizeButton = [windowWidth/10, windowHeight/10];
+  textSize(20);
+  buttonStart = createButton('Start');
+  buttonStart.size(sizeButton[0], sizeButton[1]-20);
+  buttonStart.position(0, 5);
+  buttonStart.style("font-size: x-large");
+  buttonStart.class('handsfree-show-when-stopped');
+  buttonStart.class('handsfree-hide-when-loading');
+  buttonStart.mousePressed(() => {
+    handsfree.start();
+    playSound();
+  });
+  
+  buttonLoading = createButton('...loading...');
+  buttonLoading.size(sizeButton[0], sizeButton[1]-20);
+  buttonLoading.position(0, 5);
+  buttonLoading.style("font-size: x-large");
+  buttonLoading.class('handsfree-show-when-loading');
+
+  // Create a stop button
+  buttonStop = createButton('Stop');
+  buttonStop.size(sizeButton[0], sizeButton[1]-20);
+  buttonStop.position(0, 5);
+  buttonStop.style("font-size: x-large");
+  buttonStop.class('handsfree-show-when-started');
+  buttonStop.mousePressed(() => handsfree.stop());
+
+  buttonView = createButton("View on");
+  buttonView.mousePressed(starCameraView);
+  buttonView.size(sizeButton[0], sizeButton[1]-20);
+  buttonView.position(sizeButton[0], 5);
+  buttonView.style("font-size: x-large");
+
+  buttonTrack = createButton("track");
+  buttonTrack.mousePressed(startHandTracking);
+  buttonTrack.size(sizeButton[0], sizeButton[1]-20);
+  buttonTrack.position(sizeButton[0]*2, 5);
+  buttonTrack.style("font-size: x-large");
+
+  sliderVelocity = createSlider(0, 1, 0.5, 0.01);
+  sliderVelocity.position(sizeButton[0]*3+30, sizeButton[1]/2-15);
+  
+  radioMode = createRadio();
+  radioMode.position(sizeButton[0]*3+30, sizeButton[1]/2+15);
+  radioMode.option("Double hand");
+  radioMode.option("Single hand");
+  radioMode.selected("Double hand");
+
   // 映像を非表示化
   capture.hide();
-  handsfree.start()
+
+  oscLeft = new p5.Oscillator('sine');
+  oscRight = new p5.Oscillator('sine');
 }
 
 function draw() {
+  if(onView){
+    // 映像を左右反転させて表示
+    push();
+    translate(width, 0);
+    scale(-1, 1);
+    image(capture, 0, 0, width, height);
+    pop();
+  }else{
+    background(128);
+  }
+  line(0, height/3, width, height/3);
+  line(0, height*2/3, width, height*2/3);
 
-  // 映像を左右反転させて表示
-  push();
-  translate(width, 0);
-  scale(-1, 1);
-  image(capture, 0, 0, width, height);
-  pop();
+  // 手の頂点を表示
+  
+  if(onHandTracking){
+    if(radioMode.value() == "Double hand"){
+      drawDoubleHands();
+      // playSound();
+    }else if(radioMode.value() == "Single hand"){
+      drawSingleHands();
+      playSound();
+    }
+    
+  }
 
-  var ul = document.getElementById("keyboard");
-  ul.style.display = "";
-
-  var ul_element = document.createElement('ul');
-
-  for(var i=1; i<=5; i++) {
-    var li_element = document.createElement('li');
-    li_element.textContent = 'テキスト' + i;
-    ul_element.appendChild(li_element);
+  updateView();
 }
 
-  
-  // 手の頂点を表示
-  drawDoubleHands();
-  playDoubleHandsSound();
+function updateView(){
+  if(pWindowWidth != windowWidth){
+    // resizeCanvas(windowWidth, windowHeight);
+    resizeCanvas(windowWidth, orgHeight * (windowWidth/orgWidth)*0.9);
+    sizeButton = [windowWidth/10, windowHeight/10];
+    buttonStart.size(sizeButton[0], sizeButton[1]-20);
+    buttonStart.position(0, 5);
+    buttonLoading.size(sizeButton[0], sizeButton[1]-20);
+    buttonLoading.position(0, 5);
+    buttonStop.size(sizeButton[0], sizeButton[1]-20);
+    buttonStop.position(0, 5);
+    buttonView.size(sizeButton[0], sizeButton[1]-20);
+    buttonView.position(sizeButton[0], 5);
+    buttonTrack.size(sizeButton[0], sizeButton[1]-20);
+    buttonTrack.position(sizeButton[0]*2, 5);
+    sliderVelocity.position(sizeButton[0]*3+30, sizeButton[1]/2-15);
+    radioMode.position(sizeButton[0]*3+30, sizeButton[1]/2+15);
+  }
+  pWindowWidth = windowWidth;
+}
 
-    
-    
+function starCameraView(){
+  if(onView){
+    buttonView.html("View on");
+  }else{
+    buttonView.html("view off");
+  }
+  onView = !onView;
+}
 
+function startHandTracking(){
+  if(onHandTracking){
+    buttonTrack.html("track");
+  }else{
+    buttonTrack.html("untrack");
+  }
+  onHandTracking = !onHandTracking;
 }
 
 function drawDoubleHands() {
@@ -114,7 +219,7 @@ function drawDoubleHands() {
 
   // // 手の数だけlandmarkの地点にcircleを描写
   // hands.multiHandLandmarks.forEach((hand, handIndex) => {
-    let label = handedness["label"] == 'Left' ? 1 : 0;
+    label = handedness["label"] == 'Left' ? 1 : 0;
     hand.forEach((landmark, landmarkIndex) => {
       // 指先だけ色を変更
       push();
@@ -127,13 +232,23 @@ function drawDoubleHands() {
         // case 12:
         // case 16:
         // case 20:
+          // print(note_colors)
+          // print(note_colors[handIndex][landmarkIndex]);
           fill(note_colors[label][landmarkIndex][1]);
+          // fill(color(note_colors[handIndex][landmarkIndex][1][0], note_colors[handIndex][landmarkIndex][1][1], note_colors[handIndex][landmarkIndex][1][2]));
           circle(width - landmark.x * width, landmark.y * height, circleSize*2);
-          fill("#000000");
+          // circle(width - landmark.x * width, landmark.y * height, circleSize);
           break;
         case 21:
           let y = landmark.y*height;
           print(landmark.y, y, height/3);
+          if(y < height/3){
+            toneShift[label] = 2;
+          }else if(y >= height/3 && y < height*2/3){
+            toneShift[label] = 1;
+          }else{
+            toneShift[label] = 0;
+          }
           fill(color(255, 255, 255));
           circle(width - landmark.x * width, landmark.y * height, circleSize);
           break;
@@ -142,13 +257,17 @@ function drawDoubleHands() {
           circle(width - landmark.x * width, landmark.y * height, circleSize);
       }
       pop();
+      // circle(width - landmark.x * width, landmark.y * height, circleSize);
     });
   });
 
+  // console.log(handsfree.data.hands.pinchState[0])
   
 }
 
 function playDoubleHandsSound(){
+  velocity = sliderVelocity.value();
+
   const hands = handsfree.data?.hands;
   if (!hands?.multiHandLandmarks) return;
 
@@ -160,24 +279,86 @@ function playDoubleHandsSound(){
   leftHandPinch.forEach((handPinch, index) => {
     if (handPinch == "start"){
       console.log("left", handPinch, index);
+      oscLeft.amp(0.5);
+      oscLeft.freq(440);
+      oscLeft.start();
     }else if(handPinch == "held"){
       console.log("left", handPinch, index);
+      oscLeft.freq(440);
     }else if(handPinch == "released"){
       console.log("left", handPinch, index);
+      oscLeft.stop();
     }
-    
   });
 
   rightHandPinch.forEach((handPinch, index) => {
     if (handPinch == "start"){
-      console.log("right", handPinch, index);      
+      console.log("right", handPinch, index);
     }else if(handPinch == "held"){
-      console.log("right", handPinch, index);      
+      console.log("right", handPinch, index);
     }else if(handPinch == "released"){
-      console.log("right", handPinch, index);      
+      console.log("right", handPinch, index);
     }
   });
 
-
 } 
 
+function playSound(){
+  handsfree.on('finger-pinched-start-0-0', () => {
+    
+    posX = handsfree.data.hands.curPinch[0][0].x;
+    posY = handsfree.data.hands.curPinch[0][0].y;
+    console.log(posX, posY);
+    oscLeft.start();
+    oscLeft.amp(1-posY);
+    oscLeft.freq(1100*(1-posX)+220);
+    
+
+  })
+
+  handsfree.on('finger-pinched-held-0-0', () => {
+    
+    posX = handsfree.data.hands.curPinch[0][0].x;
+    posY = handsfree.data.hands.curPinch[0][0].y;
+    console.log(posX, posY);
+
+    oscLeft.amp(1-posY);
+    oscLeft.freq(1100*(1-posX)+220);
+
+  })
+
+  handsfree.on('finger-pinched-released-0-0', () => {
+    
+    oscLeft.stop();
+
+  })
+
+  handsfree.on('finger-pinched-start-1-0', () => {
+    
+    posX = handsfree.data.hands.curPinch[1][0].x;
+    posY = handsfree.data.hands.curPinch[1][0].y;
+    console.log(posX, posY);
+    oscRight.start();
+    oscRight.amp(1-posY);
+    oscRight.freq(1100*(1-posX)+220);
+    
+
+  })
+
+  handsfree.on('finger-pinched-held-1-0', () => {
+    
+    posX = handsfree.data.hands.curPinch[1][0].x;
+    posY = handsfree.data.hands.curPinch[1][0].y;
+    console.log(posX, posY);
+
+    oscRight.amp(1-posY);
+    oscRight.freq(1100*(1-posX)+220);
+
+  })
+
+  handsfree.on('finger-pinched-released-1-0', () => {
+    
+    oscRight.stop();
+
+  })
+}
