@@ -5,9 +5,9 @@ let capture;
 // webカメラのロードフラグ
 let videoDataLoaded = false;
 
-let buttonStart;
-let buttonLoading;
 let buttonStop;
+let buttonLoading;
+let buttonRunning;
 let buttonView;
 let buttonTrack;
 
@@ -41,6 +41,22 @@ const singleTones = [["G3", "A3", "B3", "C4"], ["C4", "D4", "E4", "F4"], ["G4", 
 
 let oscLeft;
 let oscRight;
+const N = 16;
+const keyWhite = [];
+const keyBlack = [];
+// const toneWhite = {0:"F3", 1:"G3", 2:"A3", 3:"B3", 4:"C4", 
+//                 5:"D4", 6:"E4", 7:"F4", 8:"G4", 9:"A4", 10:"B4", 11:"C5",
+//                 12:"D5", 13:"E5", 14:"F5", 15:"G5"};
+// const toneBlack = {0:"F3", 1:"F#3", 2:"G#3", 3:"A#3", 4:"C4",
+//                 5:"C#4", 6:"D#4", 7:"F4", 8:"F#4", 9:"G#4", 10:"A#4", 11:"C5",
+//                 12:"C#5", 13:"D#5", 14:"F5", 15:"F#5"};
+
+const toneWhite = {0:["F3", 174.614], 1:["G3", 195.998], 2:["A3", 220.000], 3:["B3", 246.942], 4:["C4", 261.626], 
+                5:["D4", 293.665], 6:["E4", 329.628], 7:["F4", 349.228], 8:["G4", 391.995], 9:["A4", 440.000], 10:["B4", 493.883], 11:["C5", 523.251],
+                12:["D5", 587.330], 13:["E5", 659.255], 14:["F5", 698.456], 15:["G5", 783.991]};
+const toneBlack = {0:["F3", 174.614], 1:["F#3", 184.997], 2:["G#3", 207.652], 3:["A#3", 233.082], 4:["C4", 261.626],
+                5:["C#4", 277.183], 6:["D#4", 311.127], 7:["F4",349.228], 8:["F#4", 369.994], 9:["G#4", 415.305], 10:["A#4", 466.164], 11:["C5", 523.251],
+                12:["C#5", 554.365], 13:["D#5", 622.254], 14:["F5", 698.456], 15:["F#5", 739.989]};
 
 function setup() {
   // createCanvas(640, 480);
@@ -51,9 +67,10 @@ function setup() {
     videoDataLoaded = true;
     orgWidth = capture.width;
     orgHeight = capture.height;
-    let canvas = createCanvas(capture.width, capture.height);
+    let canvas = createCanvas(capture.width*2, capture.height*2);
     // let canvas = createCanvas(windowWidth, orgHeight * (windowWidth/orgWidth)*0.9);
     // let canvas = createCanvas(window.innerWidth*(window.innerHeight/orgHeight), window.innerHeight*0.85);
+    // let canvas = createCanvas(window.innerWidth, window.innerHeight*0.85);
     // let canvas = createCanvas(windowWidth, windowHeight*0.9);
     pWindowWidth = windowWidth;
     canvas.position(0, window.innerHeight/10);
@@ -83,13 +100,15 @@ function setup() {
   
   sizeButton = [windowWidth/10, windowHeight/10];
   textSize(20);
-  buttonStart = createButton('Start');
-  buttonStart.size(sizeButton[0], sizeButton[1]-20);
-  buttonStart.position(0, 5);
-  buttonStart.style("font-size: x-large");
-  buttonStart.class('handsfree-show-when-stopped');
-  buttonStart.class('handsfree-hide-when-loading');
-  buttonStart.mousePressed(() => {
+  buttonStop = createButton('Stop');
+  buttonStop.size(sizeButton[0], sizeButton[1]-20);
+  buttonStop.position(0, 5);
+  
+  buttonStop.style("background", "#cc0000");
+  buttonStop.class('handsfree-show-when-stopped');
+  buttonStop.class('handsfree-hide-when-loading');
+  buttonStop.style("font-size: x-large");
+  buttonStop.mousePressed(() => {
     handsfree.start();
     playSound();
   });
@@ -99,25 +118,29 @@ function setup() {
   buttonLoading.position(0, 5);
   buttonLoading.style("font-size: x-large");
   buttonLoading.class('handsfree-show-when-loading');
+  buttonLoading.style("background", "#cccc00");
 
   // Create a stop button
-  buttonStop = createButton('Stop');
-  buttonStop.size(sizeButton[0], sizeButton[1]-20);
-  buttonStop.position(0, 5);
-  buttonStop.style("font-size: x-large");
-  buttonStop.class('handsfree-show-when-started');
-  buttonStop.mousePressed(() => handsfree.stop());
+  buttonRunning = createButton('Running');
+  buttonRunning.size(sizeButton[0], sizeButton[1]-20);
+  buttonRunning.position(0, 5);
+  buttonRunning.style("font-size: x-large");
+  buttonRunning.class('handsfree-show-when-started');
+  buttonRunning.style("background", "#00cc00");
+  buttonRunning.mousePressed(() => handsfree.stop());
 
-  buttonView = createButton("View on");
-  buttonView.mousePressed(starCameraView);
+  buttonView = createButton("View off");
+  buttonView.mousePressed(switchCameraView);
   buttonView.size(sizeButton[0], sizeButton[1]-20);
   buttonView.position(sizeButton[0], 5);
   buttonView.style("font-size: x-large");
+  buttonView.style("background", "#cc0000");
 
-  buttonTrack = createButton("track");
-  buttonTrack.mousePressed(startHandTracking);
+  buttonTrack = createButton("Untrack");
+  buttonTrack.mousePressed(switchHandTracking);
   buttonTrack.size(sizeButton[0], sizeButton[1]-20);
   buttonTrack.position(sizeButton[0]*2, 5);
+  buttonTrack.style("background", "#cc0000");
   buttonTrack.style("font-size: x-large");
 
   sliderVelocity = createSlider(0, 1, 0.5, 0.01);
@@ -147,18 +170,38 @@ function draw() {
   }else{
     background(128);
   }
-  line(0, height/3, width, height/3);
-  line(0, height*2/3, width, height*2/3);
+
+  push();
+  fill(250,250,250,128);
+  
+  for(let i=0; i < N; i++){
+    w = i*width/N;
+    rect(w+width*0.05/N,height*0.1,width*0.95/N, height*0.8);
+    keyWhite[i] = [w,height*0.1,width/N, height*0.8];
+  }
+  
+  fill(10)
+  for(let i=0; i < N; i++){
+    w = i*width/N;
+    if(i!=0 && i!=4 && i!=7 && i!=11 && i!=14){
+      
+      fill(30, 30, 30, 200);
+      rect(w-width*0.9/(2*N),height*0.1,width*0.9/N, height*0.4);
+      keyBlack[i] = [w,height*0.1,width/N, height*0.8];
+    }else{
+      keyBlack[i] = [0, 0, 0, 0];
+    }
+    
+    
+  }
+  pop();
 
   // 手の頂点を表示
   
   if(onHandTracking){
     if(radioMode.value() == "Double hand"){
       drawDoubleHands();
-      // playSound();
     }else if(radioMode.value() == "Single hand"){
-      drawSingleHands();
-      playSound();
     }
     
   }
@@ -171,12 +214,12 @@ function updateView(){
     // resizeCanvas(windowWidth, windowHeight);
     resizeCanvas(windowWidth, orgHeight * (windowWidth/orgWidth)*0.9);
     sizeButton = [windowWidth/10, windowHeight/10];
-    buttonStart.size(sizeButton[0], sizeButton[1]-20);
-    buttonStart.position(0, 5);
-    buttonLoading.size(sizeButton[0], sizeButton[1]-20);
-    buttonLoading.position(0, 5);
     buttonStop.size(sizeButton[0], sizeButton[1]-20);
     buttonStop.position(0, 5);
+    buttonLoading.size(sizeButton[0], sizeButton[1]-20);
+    buttonLoading.position(0, 5);
+    buttonRunning.size(sizeButton[0], sizeButton[1]-20);
+    buttonRunning.position(0, 5);
     buttonView.size(sizeButton[0], sizeButton[1]-20);
     buttonView.position(sizeButton[0], 5);
     buttonTrack.size(sizeButton[0], sizeButton[1]-20);
@@ -187,20 +230,24 @@ function updateView(){
   pWindowWidth = windowWidth;
 }
 
-function starCameraView(){
+function switchCameraView(){
   if(onView){
-    buttonView.html("View on");
+    buttonView.html("View off");
+    buttonView.style("background", "#cc0000");
   }else{
-    buttonView.html("view off");
+    buttonView.html("view on");
+    buttonView.style("background", "#00cc00");
   }
   onView = !onView;
 }
 
-function startHandTracking(){
+function switchHandTracking(){
   if(onHandTracking){
-    buttonTrack.html("track");
-  }else{
     buttonTrack.html("untrack");
+    buttonTrack.style("background", "#cc0000");
+  }else{
+    buttonTrack.html("track");
+    buttonTrack.style("background", "#00cc00");
   }
   onHandTracking = !onHandTracking;
 }
@@ -232,12 +279,8 @@ function drawDoubleHands() {
         // case 12:
         // case 16:
         // case 20:
-          // print(note_colors)
-          // print(note_colors[handIndex][landmarkIndex]);
           fill(note_colors[label][landmarkIndex][1]);
-          // fill(color(note_colors[handIndex][landmarkIndex][1][0], note_colors[handIndex][landmarkIndex][1][1], note_colors[handIndex][landmarkIndex][1][2]));
           circle(width - landmark.x * width, landmark.y * height, circleSize*2);
-          // circle(width - landmark.x * width, landmark.y * height, circleSize);
           break;
         case 21:
           let y = landmark.y*height;
@@ -257,108 +300,96 @@ function drawDoubleHands() {
           circle(width - landmark.x * width, landmark.y * height, circleSize);
       }
       pop();
-      // circle(width - landmark.x * width, landmark.y * height, circleSize);
     });
   });
 
-  // console.log(handsfree.data.hands.pinchState[0])
   
 }
 
-function playDoubleHandsSound(){
-  velocity = sliderVelocity.value();
-
-  const hands = handsfree.data?.hands;
-  if (!hands?.multiHandLandmarks) return;
-
-  // index, middle, ring, pinky
-  const leftHandPinch  = hands.pinchState[0]
-  const rightHandPinch = hands.pinchState[1]
-
-  let tone_array = [];
-  leftHandPinch.forEach((handPinch, index) => {
-    if (handPinch == "start"){
-      console.log("left", handPinch, index);
-      oscLeft.amp(0.5);
-      oscLeft.freq(440);
-      oscLeft.start();
-    }else if(handPinch == "held"){
-      console.log("left", handPinch, index);
-      oscLeft.freq(440);
-    }else if(handPinch == "released"){
-      console.log("left", handPinch, index);
-      oscLeft.stop();
-    }
-  });
-
-  rightHandPinch.forEach((handPinch, index) => {
-    if (handPinch == "start"){
-      console.log("right", handPinch, index);
-    }else if(handPinch == "held"){
-      console.log("right", handPinch, index);
-    }else if(handPinch == "released"){
-      console.log("right", handPinch, index);
-    }
-  });
-
-} 
-
 function playSound(){
+
   handsfree.on('finger-pinched-start-0-0', () => {
-    
-    posX = handsfree.data.hands.curPinch[0][0].x;
-    posY = handsfree.data.hands.curPinch[0][0].y;
-    console.log(posX, posY);
-    oscLeft.start();
-    oscLeft.amp(1-posY);
-    oscLeft.freq(1100*(1-posX)+220);
-    
+    if(onHandTracking){
+      posX = handsfree.data.hands.curPinch[0][0].x;
+      posY = handsfree.data.hands.curPinch[0][0].y;
+      // console.log(posX, posY);
+      oscLeft.start();
+      oscLeft.amp(sliderVelocity.value());
+      // oscLeft.freq(1100*(1-posX)+220);
+      if(posY > 0.5){
+        note = toneWhite[int((1-posX)*width/(width/N))][1];
+      }else{
+        note = toneBlack[int(((1-posX)*width-width*0.9/(2*N))/(width/N))+1][1];
+      }
+
+      oscLeft.freq(note);
+
+    }
 
   })
 
   handsfree.on('finger-pinched-held-0-0', () => {
-    
-    posX = handsfree.data.hands.curPinch[0][0].x;
-    posY = handsfree.data.hands.curPinch[0][0].y;
-    console.log(posX, posY);
+    if(onHandTracking){
+      posX = handsfree.data.hands.curPinch[0][0].x;
+      posY = handsfree.data.hands.curPinch[0][0].y;
+      // console.log(posX, posY);
 
-    oscLeft.amp(1-posY);
-    oscLeft.freq(1100*(1-posX)+220);
-
+      oscLeft.amp(sliderVelocity.value());
+      // oscLeft.freq(1100*(1-posX)+220);
+      if(posY > 0.5){
+        note = toneWhite[int((1-posX)*width/(width/N))][1];
+      }else{
+        note = toneBlack[int(((1-posX)*width-width*0.9/(2*N))/(width/N))+1][1];
+      }
+      
+      console.log(note);
+      oscLeft.freq(note);
+    }
   })
 
   handsfree.on('finger-pinched-released-0-0', () => {
-    
     oscLeft.stop();
-
   })
 
   handsfree.on('finger-pinched-start-1-0', () => {
-    
-    posX = handsfree.data.hands.curPinch[1][0].x;
-    posY = handsfree.data.hands.curPinch[1][0].y;
-    console.log(posX, posY);
-    oscRight.start();
-    oscRight.amp(1-posY);
-    oscRight.freq(1100*(1-posX)+220);
-    
+    if(onHandTracking){
+      posX = handsfree.data.hands.curPinch[1][0].x;
+      posY = handsfree.data.hands.curPinch[1][0].y;
+      console.log(posX, posY);
+      oscRight.start();
+      oscRight.amp(sliderVelocity.value());
+      // oscRight.freq(1100*(1-posX)+220);
+      if(posY > 0.5){
+        note = toneWhite[int((1-posX)*width/(width/N))][1];
+      }else{
+        note = toneBlack[int(((1-posX)*width-width*0.9/(2*N))/(width/N))+1][1];
+      }
+
+      oscRight.freq(note);
+    }
 
   })
 
   handsfree.on('finger-pinched-held-1-0', () => {
-    
-    posX = handsfree.data.hands.curPinch[1][0].x;
-    posY = handsfree.data.hands.curPinch[1][0].y;
-    console.log(posX, posY);
+    if(onHandTracking){
+      posX = handsfree.data.hands.curPinch[1][0].x;
+      posY = handsfree.data.hands.curPinch[1][0].y;
+      console.log(posX, posY);
 
-    oscRight.amp(1-posY);
-    oscRight.freq(1100*(1-posX)+220);
+      oscRight.amp(sliderVelocity.value());
+      // oscRight.freq(1100*(1-posX)+220);
+      if(posY > 0.5){
+        note = toneWhite[int((1-posX)*width/(width/N))][1];
+      }else{
+        note = toneBlack[int(((1-posX)*width-width*0.9/(2*N))/(width/N))+1][1];
+      }
 
+      console.log(note);
+      oscRight.freq(note);
+    }
   })
 
   handsfree.on('finger-pinched-released-1-0', () => {
-    
     oscRight.stop();
-
   })
 }
