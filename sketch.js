@@ -66,7 +66,7 @@ function setup() {
     videoDataLoaded = true;
     orgWidth = capture.width;
     orgHeight = capture.height;
-    let canvas = createCanvas(capture.width*2, capture.height*2);
+    let canvas = createCanvas(capture.width, capture.height);
     // let canvas = createCanvas(windowWidth, orgHeight * (windowWidth/orgWidth)*0.9);
     // let canvas = createCanvas(window.innerWidth*(window.innerHeight/orgHeight), window.innerHeight*0.85);
     // let canvas = createCanvas(window.innerWidth, window.innerHeight*0.85);
